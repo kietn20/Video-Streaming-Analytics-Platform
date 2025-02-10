@@ -18,8 +18,6 @@ target/
 *.iws
 *.iml
 *.ipr
-.idea/
-*.class
 
 ### NetBeans ###
 /nbproject/private/
@@ -31,22 +29,5 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-# Ignore .env file
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env*
-
-# Ignore build artifacts
-/target/
-/build/
-
-# Ignore logs and temporary files
-*.log
-*.tmp
-
-# Ignore OS-specific files
-.DS_Store
-Thumbs.db
+### VS Code ###
+.vscode/
