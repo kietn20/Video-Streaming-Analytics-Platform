@@ -1,0 +1,16 @@
+# File: services/api-gateway-service/src/main/resources/application-dev.yml
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://localhost:8081  # Direct URI for local development
+        - id: video-service
+          uri: http://localhost:8082
+        - id: analytics-service
+          uri: http://localhost:8083
+
+logging:
+  level:
+    root: DEBUG
+    com.videoanalytics.gateway: DEBUG
