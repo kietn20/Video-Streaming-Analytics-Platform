@@ -1,0 +1,99 @@
+# File: services/api-gateway-service/src/main/resources/application.yml
+
+spring:
+  application:
+    name: api-gateway-service
+
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=2
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+
+        - id: video-service
+          uri: lb://video-service
+          predicates:
+            - Path=/api/videos/**
+          filters:
+            - StripPrefix=2
+            - JwtAuthentication
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+
+        - id: analytics-service
+          uri: lb://analytics-service
+          predicates:
+            - Path=/api/analytics/**
+          filters:
+            - StripPrefix=2
+            - JwtAuthentication
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 15
+                redis-rate-limiter.burstCapacity: 30
+
+server:
+  port: 8080
+  shutdown: graceful
+
+# Gateway specific configurations
+gateway:
+  jwt:
+    secret: ${JWT_SECRET:your-default-secret-key-for-development}
+    expiration-ms: 86400000  # 24 hours
+  rate-limit:
+    default:
+      max-requests: 100
+      per-seconds: 60
+
+# Redis configuration for rate limiting
+spring.data.redis:
+  host: ${REDIS_HOST:localhost}
+  port: ${REDIS_PORT:6379}
+  password: ${REDIS_PASSWORD:}
+
+# Actuator endpoints configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus,gateway
+  endpoint:
+    health:
+      show-details: when_authorized
+    gateway:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
+
+# Logging configuration
+logging:
+  level:
+    root: INFO
+    com.videoanalytics.gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Security configuration
+security:
+  ignored-paths:
+    - /api/auth/login
+    - /api/auth/register
+    - /actuator/health
+    - /actuator/prometheus
