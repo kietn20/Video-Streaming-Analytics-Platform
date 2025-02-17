@@ -270,5 +270,33 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .orElse(0.0);
     }
 
-    
+    private double calculateAverageBitrate(List<ViewSession> sessions) {
+        return sessions.stream()
+                .filter(session -> session.getAverageBitrate() != null)
+                .mapToLong(ViewSession::getAverageBitrate)
+                .average()
+                .orElse(0.0);
+    }
+
+    private double calculateReplayRate(List<ViewSession> sessions) {
+        if (sessions.isEmpty()) return 0.0;
+
+        Map<Long, Long> userSessionCounts = sessions.stream()
+                .collect(Collectors.groupingBy(
+                        ViewSession::getUserId,
+                        Collectors.counting()
+                ));
+
+        return userSessionCounts.values().stream()
+                .mapToLong(count -> count > 1 ? 1 : 0)
+                .average()
+                .orElse(0.0) * 100;
+    }
+
+    // Cache management
+    @Scheduled(fixedRate = 900000) // 15 minutes
+    public void refreshAnalyticsCache() {
+        log.info("Refreshing analytics cache");
+        // Implementation would clear/update caches as needed
+    }
 }
