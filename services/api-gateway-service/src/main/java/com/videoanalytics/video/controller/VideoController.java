@@ -338,4 +338,37 @@ public class VideoController {
         return ResponseEntity.ok(viewCount);
     }
 
+    // Helper methods
+
+    /**
+     * Extracts the user ID from the authenticated user details
+     */
+    private Long extractUserId(UserDetails userDetails) {
+        // In a real application, this would extract the user ID from the UserDetails object
+        // For this example, we'll assume the username is the user ID as a string
+        return Long.parseLong(userDetails.getUsername());
+    }
+
+    /**
+     * Converts a Video entity to a VideoResponse DTO
+     */
+    private VideoResponse convertToVideoResponse(Video video) {
+        return VideoResponse.builder()
+                .id(video.getId())
+                .title(video.getTitle())
+                .description(video.getDescription())
+                .storageKey(video.getStorageKey())
+                .duration(video.getDuration())
+                .status(video.getStatus())
+                .mimeType(video.getMimeType())
+                .resolutionWidth(video.getResolutionWidth())
+                .resolutionHeight(video.getResolutionHeight())
+                .viewCount(video.getViewCount())
+                .likeCount(video.getLikeCount())
+                .tags(video.getTags())
+                .uploadedBy(video.getUploadedBy())
+                .createdAt(video.getCreatedAt())
+                .updatedAt(video.getUpdatedAt())
+                .build();
+    }
 }
