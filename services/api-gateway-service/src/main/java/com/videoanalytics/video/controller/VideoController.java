@@ -138,4 +138,64 @@ public class VideoController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Delete a video
+     *
+     * Marks a video as deleted (soft delete).
+     * Only the video owner or an admin can delete a video.
+     */
+    @DeleteMapping("/{id}")
+    @Operation(
+            summary = "Delete a video",
+            description = "Marks a video as deleted (soft delete). Only the video owner or an admin can delete a video."
+    )
+    @ApiResponse(responseCode = "204", description = "Video successfully deleted")
+    @ApiResponse(responseCode = "403", description = "Not authorized to delete this video")
+    @ApiResponse(responseCode = "404", description = "Video not found")
+    @PreAuthorize("@videoSecurityService.isVideoOwnerOrAdmin(#id, principal)")
+    public ResponseEntity<Void> deleteVideo(
+            @Parameter(description = "Video ID", required = true)
+            @PathVariable Long id) {
+
+        log.info("Deleting video with ID: {}", id);
+
+        videoService.deleteVideo(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Search videos
+     *
+     * Searches for videos by title (case-insensitive partial match).
+     */
+    @GetMapping("/search")
+    @Operation(
+            summary = "Search videos",
+            description = "Searches for videos by title (case-insensitive partial match)"
+    )
+    @ApiResponse(responseCode = "200", description = "Search results")
+    public ResponseEntity<Page<VideoResponse>> searchVideos(
+            @Parameter(description = "Search query")
+            @RequestParam String query,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        log.debug("Searching videos with query: {}", query);
+
+        // Create pageable with sorting
+        Sort sort = sortDir.equalsIgnoreCase("asc") ?
+                Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        PageRequest pageRequest = PageRequest.of(page, size, sort);
+
+        // Perform search
+        Page<Video> videos = videoService.searchVideos(query, pageRequest);
+
+        // Map to response DTOs
+        Page<VideoResponse> response = videos.map(this::convertToVideoResponse);
+
+        return ResponseEntity.ok(response);
+    }
+
 }
