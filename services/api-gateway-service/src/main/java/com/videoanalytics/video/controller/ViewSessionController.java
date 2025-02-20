@@ -194,4 +194,81 @@ public class ViewSessionController {
         return ResponseEntity.ok(distribution);
     }
 
+    /**
+     * Get average watch duration
+     *
+     * Retrieves the average time users spend watching a specific video.
+     */
+    @GetMapping("/analytics/duration/{videoId}")
+    @Operation(
+            summary = "Get average watch duration",
+            description = "Retrieves the average time users spend watching a specific video"
+    )
+    @ApiResponse(responseCode = "200", description = "Average watch duration in seconds")
+    @ApiResponse(responseCode = "404", description = "Video not found")
+    @PreAuthorize("hasRole('ADMIN') or @videoSecurityService.isVideoOwner(#videoId, principal)")
+    public ResponseEntity<Double> getAverageWatchDuration(
+            @Parameter(description = "Video ID", required = true)
+            @PathVariable Long videoId) {
+
+        log.debug("Getting average watch duration for video ID: {}", videoId);
+
+        double averageDuration = viewSessionService.getAverageWatchDuration(videoId);
+        return ResponseEntity.ok(averageDuration);
+    }
+
+    /**
+     * Get video completion rate
+     *
+     * Retrieves the percentage of views where users watched at least 90% of the video.
+     */
+    @GetMapping("/analytics/completion/{videoId}")
+    @Operation(
+            summary = "Get video completion rate",
+            description = "Retrieves the number of views where users watched at least 90% of the video"
+    )
+    @ApiResponse(responseCode = "200", description = "Completion count")
+    @ApiResponse(responseCode = "404", description = "Video not found")
+    @PreAuthorize("hasRole('ADMIN') or @videoSecurityService.isVideoOwner(#videoId, principal)")
+    public ResponseEntity<Long> getCompletionRate(
+            @Parameter(description = "Video ID", required = true)
+            @PathVariable Long videoId) {
+
+        log.debug("Getting completion rate for video ID: {}", videoId);
+
+        long completionCount = viewSessionService.getCompletionRate(videoId);
+        return ResponseEntity.ok(completionCount);
+    }
+
+    /**
+     * Get sessions in time range
+     *
+     * Admin endpoint to retrieve all viewing sessions within a specific time period.
+     */
+    @GetMapping("/analytics/timerange")
+    @Operation(
+            summary = "Get sessions in time range",
+            description = "Admin endpoint to retrieve all viewing sessions within a specific time period"
+    )
+    @ApiResponse(responseCode = "200", description = "List of sessions")
+    @ApiResponse(responseCode = "403", description = "Not authorized")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ViewSessionResponse>> getSessionsInTimeRange(
+            @Parameter(description = "Start time", required = true)
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @Parameter(description = "End time", required = true)
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+
+        log.debug("Fetching sessions between {} and {}", start, end);
+
+        List<ViewSession> sessions = viewSessionService.getSessionsInTimeRange(start, end);
+
+        // Map to response DTOs
+        List<ViewSessionResponse> response = sessions.stream()
+                .map(this::convertToViewSessionResponse)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(response);
+    }
+
 }
