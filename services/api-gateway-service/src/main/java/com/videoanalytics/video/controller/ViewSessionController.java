@@ -271,4 +271,35 @@ public class ViewSessionController {
         return ResponseEntity.ok(response);
     }
 
+    // Helper methods
+
+    /**
+     * Extracts the user ID from the authenticated user details
+     */
+    private Long extractUserId(UserDetails userDetails) {
+        // In a real application, this would extract the user ID from the UserDetails object
+        // For this example, we'll assume the username is the user ID as a string
+        return Long.parseLong(userDetails.getUsername());
+    }
+
+    /**
+     * Converts a ViewSession entity to a ViewSessionResponse DTO
+     */
+    private ViewSessionResponse convertToViewSessionResponse(ViewSession session) {
+        return ViewSessionResponse.builder()
+                .id(session.getId())
+                .videoId(session.getVideo().getId())
+                .userId(session.getUserId())
+                .startedAt(session.getStartedAt())
+                .endedAt(session.getEndedAt())
+                .watchDuration(session.getWatchDuration())
+                .lastPosition(session.getLastPosition())
+                .deviceType(session.getDeviceType())
+                .platform(session.getPlatform())
+                .qualitySwitches(session.getQualitySwitches())
+                .bufferEvents(session.getBufferEvents())
+                .averageBitrate(session.getAverageBitrate())
+                .build();
+    }
+
 }
