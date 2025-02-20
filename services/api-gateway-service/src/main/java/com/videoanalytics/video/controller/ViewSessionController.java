@@ -301,5 +301,4 @@ public class ViewSessionController {
                 .averageBitrate(session.getAverageBitrate())
                 .build();
     }
-
 }
