@@ -198,4 +198,68 @@ public class VideoController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Filter videos by tags
+     *
+     * Retrieves videos that match any of the provided tags.
+     */
+    @GetMapping("/tags")
+    @Operation(
+            summary = "Filter videos by tags",
+            description = "Retrieves videos that match any of the provided tags"
+    )
+    @ApiResponse(responseCode = "200", description = "Filtered videos")
+    public ResponseEntity<Page<VideoResponse>> getVideosByTags(
+            @Parameter(description = "Tags to filter by (comma-separated)")
+            @RequestParam String tags,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        // Parse comma-separated tags
+        Set<String> tagSet = Set.of(tags.split(","));
+        log.debug("Filtering videos by tags: {}", tagSet);
+
+        // Create pageable
+        PageRequest pageRequest = PageRequest.of(page, size);
+
+        // Perform filtering
+        Page<Video> videos = videoService.findByTags(tagSet, pageRequest);
+
+        // Map to response DTOs
+        Page<VideoResponse> response = videos.map(this::convertToVideoResponse);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get user's videos
+     *
+     * Retrieves videos uploaded by a specific user.
+     */
+    @GetMapping("/user/{userId}")
+    @Operation(
+            summary = "Get user's videos",
+            description = "Retrieves videos uploaded by a specific user"
+    )
+    @ApiResponse(responseCode = "200", description = "User's videos")
+    public ResponseEntity<Page<VideoResponse>> getUserVideos(
+            @Parameter(description = "User ID", required = true)
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        log.debug("Fetching videos for user ID: {}", userId);
+
+        // Create pageable
+        PageRequest pageRequest = PageRequest.of(page, size);
+
+        // Get user videos
+        Page<Video> videos = videoService.getUserVideos(userId, pageRequest);
+
+        // Map to response DTOs
+        Page<VideoResponse> response = videos.map(this::convertToVideoResponse);
+
+        return ResponseEntity.ok(response);
+    }
+
 }
