@@ -136,5 +136,62 @@ public class ViewSessionController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Get user's viewing history
+     *
+     * Retrieves a paginated list of a user's viewing sessions.
+     * Users can only access their own viewing history.
+     */
+    @GetMapping("/user/{userId}")
+    @Operation(
+            summary = "Get user's viewing history",
+            description = "Retrieves a paginated list of a user's viewing sessions. " +
+                    "Users can only access their own viewing history unless they are admins."
+    )
+    @ApiResponse(responseCode = "200", description = "User's viewing history")
+    @ApiResponse(responseCode = "403", description = "Not authorized to view this user's history")
+    @PreAuthorize("@sessionSecurityService.canAccessUserHistory(#userId, principal)")
+    public ResponseEntity<Page<ViewSessionResponse>> getUserSessions(
+            @Parameter(description = "User ID", required = true)
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        log.debug("Fetching viewing history for user ID: {}", userId);
+
+        // Create pageable
+        PageRequest pageRequest = PageRequest.of(page, size);
+
+        // Get user sessions
+        Page<ViewSession> sessions = viewSessionService.getUserSessions(userId, pageRequest);
+
+        // Map to response DTOs
+        Page<ViewSessionResponse> response = sessions.map(this::convertToViewSessionResponse);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get device distribution analytics
+     *
+     * Retrieves analytics on device types used to watch a specific video.
+     */
+    @GetMapping("/analytics/devices/{videoId}")
+    @Operation(
+            summary = "Get device distribution analytics",
+            description = "Retrieves analytics on device types used to watch a specific video"
+    )
+    @ApiResponse(responseCode = "200", description = "Device distribution data")
+    @ApiResponse(responseCode = "404", description = "Video not found")
+    @PreAuthorize("hasRole('ADMIN') or @videoSecurityService.isVideoOwner(#videoId, principal)")
+    public ResponseEntity<Map<String, Long>> getDeviceDistribution(
+            @Parameter(description = "Video ID", required = true)
+            @PathVariable Long videoId) {
+
+        log.debug("Getting device distribution for video ID: {}", videoId);
+
+        Map<String, Long> distribution = viewSessionService.getDeviceDistribution(videoId);
+        return ResponseEntity.ok(distribution);
+    }
 
 }
