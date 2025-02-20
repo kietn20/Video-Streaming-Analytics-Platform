@@ -262,4 +262,80 @@ public class VideoController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Update video status
+     *
+     * Administrative endpoint to update the status of a video.
+     * Only admins can access this endpoint.
+     */
+    @PatchMapping("/{id}/status")
+    @Operation(
+            summary = "Update video status",
+            description = "Administrative endpoint to update the status of a video. Only admins can access this endpoint."
+    )
+    @ApiResponse(responseCode = "200", description = "Status updated successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid status")
+    @ApiResponse(responseCode = "403", description = "Not authorized")
+    @ApiResponse(responseCode = "404", description = "Video not found")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<VideoResponse> updateVideoStatus(
+            @Parameter(description = "Video ID", required = true)
+            @PathVariable Long id,
+            @Parameter(description = "New status", required = true)
+            @RequestParam VideoStatus status) {
+
+        log.info("Updating status to {} for video ID: {}", status, id);
+
+        videoService.updateVideoStatus(id, status);
+
+        return videoService.getVideo(id)
+                .map(this::convertToVideoResponse)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Record video view
+     *
+     * Increments the view count for a video.
+     */
+    @PostMapping("/{id}/view")
+    @Operation(
+            summary = "Record video view",
+            description = "Increments the view count for a video"
+    )
+    @ApiResponse(responseCode = "204", description = "View recorded successfully")
+    @ApiResponse(responseCode = "404", description = "Video not found")
+    public ResponseEntity<Void> recordView(
+            @Parameter(description = "Video ID", required = true)
+            @PathVariable Long id) {
+
+        log.debug("Recording view for video ID: {}", id);
+
+        videoService.recordView(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Get video view count
+     *
+     * Retrieves the current view count for a video.
+     */
+    @GetMapping("/{id}/views")
+    @Operation(
+            summary = "Get video view count",
+            description = "Retrieves the current view count for a video"
+    )
+    @ApiResponse(responseCode = "200", description = "View count retrieved")
+    @ApiResponse(responseCode = "404", description = "Video not found")
+    public ResponseEntity<Long> getViewCount(
+            @Parameter(description = "Video ID", required = true)
+            @PathVariable Long id) {
+
+        log.debug("Getting view count for video ID: {}", id);
+
+        long viewCount = videoService.getViewCount(id);
+        return ResponseEntity.ok(viewCount);
+    }
+
 }
