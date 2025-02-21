@@ -104,4 +104,83 @@ public class VideoLikeController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Check if user has liked a video
+     *
+     * Returns whether the authenticated user has liked the specified video.
+     */
+    @GetMapping("/{videoId}/check")
+    @Operation(
+            summary = "Check if user has liked a video",
+            description = "Returns whether the authenticated user has liked the specified video"
+    )
+    @ApiResponse(responseCode = "200", description = "Like status retrieved")
+    @ApiResponse(responseCode = "404", description = "Video not found")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Boolean> hasUserLikedVideo(
+            @Parameter(description = "Video ID", required = true)
+            @PathVariable Long videoId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        log.debug("Checking if user has liked video with ID: {}", videoId);
+
+        // Extract user ID from authenticated user
+        Long userId = extractUserId(userDetails);
+
+        // Check if user has liked the video
+        boolean hasLiked = videoLikeService.hasUserLiked(videoId, userId);
+
+        return ResponseEntity.ok(hasLiked);
+    }
+
+    /**
+     * Get like count for a video
+     *
+     * Returns the total number of likes for the specified video.
+     */
+    @GetMapping("/count/{videoId}")
+    @Operation(
+            summary = "Get like count for a video",
+            description = "Returns the total number of likes for the specified video"
+    )
+    @ApiResponse(responseCode = "200", description = "Like count retrieved")
+    @ApiResponse(responseCode = "404", description = "Video not found")
+    public ResponseEntity<Long> getLikeCount(
+            @Parameter(description = "Video ID", required = true)
+            @PathVariable Long videoId) {
+
+        log.debug("Getting like count for video with ID: {}", videoId);
+
+        long likeCount = videoLikeService.getLikeCount(videoId);
+
+        return ResponseEntity.ok(likeCount);
+    }
+
+    /**
+     * Get most liked videos
+     *
+     * Returns a list of the most liked videos since the specified date.
+     */
+    @GetMapping("/trending")
+    @Operation(
+            summary = "Get most liked videos",
+            description = "Returns a list of the most liked videos since the specified date"
+    )
+    @ApiResponse(responseCode = "200", description = "Trending videos retrieved")
+    public ResponseEntity<List<Long>> getMostLikedVideos(
+            @Parameter(description = "Start date (defaults to 7 days ago)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime since,
+            @Parameter(description = "Maximum number of videos to return")
+            @RequestParam(defaultValue = "10") int limit) {
+
+        // Default to 7 days ago if not specified
+        LocalDateTime startDate = since != null ? since : LocalDateTime.now().minusDays(7);
+
+        log.debug("Getting most liked videos since {} with limit {}", startDate, limit);
+
+        List<Long> trendingVideos = videoLikeService.getMostLikedVideos(startDate, limit);
+
+        return ResponseEntity.ok(trendingVideos);
+    }
+
 }
