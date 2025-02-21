@@ -39,7 +39,7 @@ public class AnalyticsController {
 
     /**
      * Get comprehensive analytics for a specific video
-     * <p>
+     *
      * Provides detailed performance metrics for a video including views, likes,
      * watch time, completion rates, and device distribution.
      */
@@ -65,7 +65,7 @@ public class AnalyticsController {
 
     /**
      * Get period-specific analytics for a video
-     * <p>
+     *
      * Retrieves analytics for a specific video within a specified date range.
      * Useful for tracking performance changes over time.
      */
@@ -95,7 +95,7 @@ public class AnalyticsController {
 
     /**
      * Get user engagement metrics
-     * <p>
+     *
      * Provides insights into a user's platform usage including total watch time,
      * videos watched, and engagement patterns.
      */
@@ -220,5 +220,31 @@ public class AnalyticsController {
 
         Map<String, Double> metrics = analyticsService.getPerformanceMetrics(videoId);
         return ResponseEntity.ok(metrics);
+    }
+
+    /**
+     * Get platform-wide metrics dashboard
+     *
+     * Administrative endpoint that provides a comprehensive view of platform usage,
+     * performance, and engagement. Only available to administrators.
+     */
+    @GetMapping("/dashboard")
+    @Operation(
+            summary = "Get platform-wide metrics dashboard",
+            description = "Administrative endpoint that provides a comprehensive view of platform usage, " +
+                    "performance, and engagement. Only available to administrators."
+    )
+    @ApiResponse(responseCode = "200", description = "Dashboard metrics successfully retrieved")
+    @ApiResponse(responseCode = "403", description = "Not authorized to view platform dashboard")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getPlatformDashboard() {
+        log.info("Retrieving platform-wide analytics dashboard");
+
+        // This could be implemented in the AnalyticsService to provide
+        // a comprehensive view of platform metrics
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Platform dashboard endpoint - to be implemented"
+        ));
     }
 }
