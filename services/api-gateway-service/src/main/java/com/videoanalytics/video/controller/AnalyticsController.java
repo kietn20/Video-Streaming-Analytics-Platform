@@ -195,4 +195,30 @@ public class AnalyticsController {
         Map<String, Double> metrics = analyticsService.getEngagementMetrics(videoId);
         return ResponseEntity.ok(metrics);
     }
+
+    /**
+     * Get performance metrics for a video
+     *
+     * Provides technical performance metrics for a specific video, focusing on
+     * playback quality and user experience.
+     */
+    @GetMapping("/performance/{videoId}")
+    @Operation(
+            summary = "Get performance metrics for a video",
+            description = "Provides technical performance metrics for a specific video, focusing on " +
+                    "playback quality and user experience."
+    )
+    @ApiResponse(responseCode = "200", description = "Performance metrics successfully retrieved")
+    @ApiResponse(responseCode = "403", description = "Not authorized to view these metrics")
+    @ApiResponse(responseCode = "404", description = "Video not found")
+    @PreAuthorize("hasRole('ADMIN') or @videoSecurityService.isVideoOwner(#videoId, principal)")
+    public ResponseEntity<Map<String, Double>> getPerformanceMetrics(
+            @Parameter(description = "Video ID", required = true)
+            @PathVariable Long videoId) {
+
+        log.info("Retrieving performance metrics for video ID: {}", videoId);
+
+        Map<String, Double> metrics = analyticsService.getPerformanceMetrics(videoId);
+        return ResponseEntity.ok(metrics);
+    }
 }
