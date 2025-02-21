@@ -183,4 +183,39 @@ public class VideoLikeController {
         return ResponseEntity.ok(trendingVideos);
     }
 
+    /**
+     * Get user's liked videos
+     *
+     * Returns a paginated list of videos that the specified user has liked.
+     * Users can only access their own likes unless they are admins.
+     */
+    @GetMapping("/user/{userId}")
+    @Operation(
+            summary = "Get user's liked videos",
+            description = "Returns a paginated list of videos that the specified user has liked. " +
+                    "Users can only access their own likes unless they are admins."
+    )
+    @ApiResponse(responseCode = "200", description = "User's likes retrieved")
+    @ApiResponse(responseCode = "403", description = "Not authorized to view this user's likes")
+    @PreAuthorize("@likeSecurityService.canAccessUserLikes(#userId, principal)")
+    public ResponseEntity<Page<VideoLikeResponse>> getUserLikes(
+            @Parameter(description = "User ID", required = true)
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        log.debug("Getting likes for user with ID: {}", userId);
+
+        // Create pageable
+        PageRequest pageRequest = PageRequest.of(page, size);
+
+        // Get user likes
+        Page<VideoLike> likes = videoLikeService.getUserLikes(userId, pageRequest);
+
+        // Map to response DTOs
+        Page<VideoLikeResponse> response = likes.map(this::convertToVideoLikeResponse);
+
+        return ResponseEntity.ok(response);
+    }
+
 }
