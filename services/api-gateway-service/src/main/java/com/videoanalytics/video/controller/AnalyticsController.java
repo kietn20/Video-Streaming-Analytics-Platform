@@ -117,4 +117,82 @@ public class AnalyticsController {
         UserEngagement engagement = analyticsService.getUserEngagement(userId);
         return ResponseEntity.ok(engagement);
     }
+
+    /**
+     * Get period-specific user engagement
+     *
+     * Retrieves user engagement metrics within a specified date range.
+     * Useful for tracking changes in user behavior over time.
+     */
+    @GetMapping("/users/{userId}/period")
+    @Operation(
+            summary = "Get period-specific user engagement",
+            description = "Retrieves user engagement metrics within a specified date range. " +
+                    "Useful for tracking changes in user behavior over time."
+    )
+    @ApiResponse(responseCode = "200", description = "Period engagement successfully retrieved")
+    @ApiResponse(responseCode = "403", description = "Not authorized to view these analytics")
+    @PreAuthorize("hasRole('ADMIN') or @userSecurityService.isSameUser(#userId, principal)")
+    public ResponseEntity<UserEngagement> getUserEngagementForPeriod(
+            @Parameter(description = "User ID", required = true)
+            @PathVariable Long userId,
+            @Parameter(description = "Start date", required = true)
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
+            @Parameter(description = "End date", required = true)
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+
+        log.info("Retrieving period engagement for user ID: {} from {} to {}", userId, start, end);
+
+        UserEngagement engagement = analyticsService.getUserEngagementForPeriod(userId, start, end);
+        return ResponseEntity.ok(engagement);
+    }
+
+    /**
+     * Get trending videos
+     *
+     * Identifies the most popular videos based on views and likes over recent time periods.
+     * Useful for content discovery and recommendations.
+     */
+    @GetMapping("/trending")
+    @Operation(
+            summary = "Get trending videos",
+            description = "Identifies the most popular videos based on views and likes over recent time periods. " +
+                    "Useful for content discovery and recommendations."
+    )
+    @ApiResponse(responseCode = "200", description = "Trending videos successfully retrieved")
+    public ResponseEntity<TrendingVideos> getTrendingVideos(
+            @Parameter(description = "Maximum number of videos to return")
+            @RequestParam(defaultValue = "10") int limit) {
+
+        log.info("Retrieving trending videos with limit: {}", limit);
+
+        TrendingVideos trending = analyticsService.getTrendingVideos(limit);
+        return ResponseEntity.ok(trending);
+    }
+
+    /**
+     * Get engagement metrics for a video
+     *
+     * Provides detailed engagement metrics for a specific video, focusing on
+     * user interaction patterns.
+     */
+    @GetMapping("/engagement/{videoId}")
+    @Operation(
+            summary = "Get engagement metrics for a video",
+            description = "Provides detailed engagement metrics for a specific video, focusing on " +
+                    "user interaction patterns."
+    )
+    @ApiResponse(responseCode = "200", description = "Engagement metrics successfully retrieved")
+    @ApiResponse(responseCode = "403", description = "Not authorized to view these metrics")
+    @ApiResponse(responseCode = "404", description = "Video not found")
+    @PreAuthorize("hasRole('ADMIN') or @videoSecurityService.isVideoOwner(#videoId, principal)")
+    public ResponseEntity<Map<String, Double>> getEngagementMetrics(
+            @Parameter(description = "Video ID", required = true)
+            @PathVariable Long videoId) {
+
+        log.info("Retrieving engagement metrics for video ID: {}", videoId);
+
+        Map<String, Double> metrics = analyticsService.getEngagementMetrics(videoId);
+        return ResponseEntity.ok(metrics);
+    }
 }
