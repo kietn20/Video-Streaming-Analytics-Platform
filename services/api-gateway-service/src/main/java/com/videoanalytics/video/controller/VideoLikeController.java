@@ -43,7 +43,7 @@ public class VideoLikeController {
 
     /**
      * Add a like to a video
-     * <p>
+     *
      * Creates a new like record for the specified video by the authenticated user.
      * A user can only like a video once.
      */
@@ -75,7 +75,7 @@ public class VideoLikeController {
 
     /**
      * Remove a like from a video
-     * <p>
+     *
      * Deletes the like record for the specified video by the authenticated user.
      * The user must have previously liked the video.
      */
@@ -218,4 +218,27 @@ public class VideoLikeController {
         return ResponseEntity.ok(response);
     }
 
+    // Helper methods
+
+    /**
+     * Extracts the user ID from the authenticated user details
+     */
+    private Long extractUserId(UserDetails userDetails) {
+        // In a real application, this would extract the user ID from the UserDetails object
+        // For this example, we'll assume the username is the user ID as a string
+        return Long.parseLong(userDetails.getUsername());
+    }
+
+    /**
+     * Converts a VideoLike entity to a VideoLikeResponse DTO
+     */
+    private VideoLikeResponse convertToVideoLikeResponse(VideoLike like) {
+        return VideoLikeResponse.builder()
+                .id(like.getId())
+                .videoId(like.getVideo().getId())
+                .userId(like.getUserId())
+                .videoTitle(like.getVideo().getTitle())
+                .createdAt(like.getCreatedAt())
+                .build();
+    }
 }
