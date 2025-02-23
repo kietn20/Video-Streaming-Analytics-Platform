@@ -66,5 +66,35 @@ public class SessionSecurityService {
         // Check if user is accessing their own history
         return userId.equals(extractUserId(principal));
     }
-    
+
+    /**
+     * Extracts user ID from the authentication principal.
+     *
+     * @param principal Authentication principal
+     * @return User ID as a Long
+     */
+    private Long extractUserId(Object principal) {
+        if (principal instanceof UserDetails) {
+            // In this example, we assume username is the user ID
+            return Long.parseLong(((UserDetails) principal).getUsername());
+        } else if (principal instanceof Authentication) {
+            return Long.parseLong(((Authentication) principal).getName());
+        }
+        throw new IllegalArgumentException("Unsupported principal type: " + principal.getClass());
+    }
+
+    /**
+     * Checks if the user has the ADMIN role.
+     *
+     * @param principal Authentication principal
+     * @return true if the user has admin role, false otherwise
+     */
+    private boolean hasAdminRole(Object principal) {
+        if (principal instanceof UserDetails) {
+            return ((UserDetails) principal).getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        } else if (principal instanceof Authentication) {
+            return ((Authentication) principal).getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+        return false;
+    }
 }
