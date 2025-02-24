@@ -1,77 +1,107 @@
-# File: services/api-gateway-service/src/main/resources/application.yml
+# Application Configuration
+# Location: src/main/resources/application.yml
 
+# Spring Application Configuration
 spring:
   application:
-    name: api-gateway-service
+    name: video-analytics-platform
 
-  cloud:
-    gateway:
-      routes:
-        - id: auth-service
-          uri: lb://auth-service
-          predicates:
-            - Path=/api/auth/**
-          filters:
-            - StripPrefix=2
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 10
-                redis-rate-limiter.burstCapacity: 20
+  # Database Configurations
+  datasource:
+    # Main PostgreSQL database for video metadata
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/videoanalytics}
+    username: ${POSTGRES_USER:dev}
+    password: ${POSTGRES_PASSWORD:development}
+    driver-class-name: org.postgresql.Driver
 
-        - id: video-service
-          uri: lb://video-service
-          predicates:
-            - Path=/api/videos/**
-          filters:
-            - StripPrefix=2
-            - JwtAuthentication
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 20
-                redis-rate-limiter.burstCapacity: 40
+    # Connection pool settings
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
 
-        - id: analytics-service
-          uri: lb://analytics-service
-          predicates:
-            - Path=/api/analytics/**
-          filters:
-            - StripPrefix=2
-            - JwtAuthentication
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 15
-                redis-rate-limiter.burstCapacity: 30
+  # TimescaleDB Configuration for analytics data
+  timescale:
+    url: ${TIMESCALE_URL:jdbc:postgresql://localhost:5433/analytics}
+    username: ${TIMESCALE_USER:dev}
+    password: ${TIMESCALE_PASSWORD:development}
+    driver-class-name: org.postgresql.Driver
 
+  # JPA/Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: false
+        use_sql_comments: true
+        jdbc:
+          batch_size: 50
+          time_zone: UTC
+    open-in-view: false
+
+  # Redis Configuration for caching
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1ms
+
+  # Security Configuration
+  security:
+    filter:
+      order: 10
+
+# Application Security Configuration
+app:
+  security:
+    jwt:
+      # Secret key for signing JWT tokens (use environment variables in production)
+      secret: ${JWT_SECRET:thisisasecretkeyforvideostreaminganalyticsplatformdevelopment}
+      # Token expiration time in milliseconds (24 hours)
+      expiration: 86400000
+      # Refresh token expiration time in milliseconds (7 days)
+      refresh-expiration: 604800000
+
+# Server Configuration
 server:
-  port: 8080
-  shutdown: graceful
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api
+  compression:
+    enabled: true
+    mime-types: text/html,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
 
-# Gateway specific configurations
-gateway:
-  jwt:
-    secret: ${JWT_SECRET:your-default-secret-key-for-development}
-    expiration-ms: 86400000  # 24 hours
-  rate-limit:
-    default:
-      max-requests: 100
-      per-seconds: 60
+# Caching Configuration
+cache:
+  video-metadata:
+    ttl: 3600 # 1 hour in seconds
+  analytics:
+    ttl: 300  # 5 minutes in seconds
 
-# Redis configuration for rate limiting
-spring.data.redis:
-  host: ${REDIS_HOST:localhost}
-  port: ${REDIS_PORT:6379}
-  password: ${REDIS_PASSWORD:}
-
-# Actuator endpoints configuration
+# Management/Actuator Configuration
 management:
   endpoints:
     web:
       exposure:
-        include: health,metrics,prometheus,gateway
+        include: health,metrics,prometheus,info
   endpoint:
     health:
-      show-details: when_authorized
-    gateway:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
       enabled: true
   metrics:
     tags:
@@ -80,20 +110,60 @@ management:
       prometheus:
         enabled: true
 
-# Logging configuration
+# Logging Configuration
 logging:
   level:
     root: INFO
-    com.videoanalytics.gateway: DEBUG
-    org.springframework.cloud.gateway: INFO
+    com.videoanalytics: DEBUG
     org.springframework.security: INFO
+    org.springframework.web: INFO
+    org.hibernate:
+      SQL: INFO
+      type.descriptor.sql.BasicBinder: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/application.log
+    max-size: 10MB
+    max-history: 7
 
-# Security configuration
-security:
-  ignored-paths:
-    - /api/auth/login
-    - /api/auth/register
-    - /actuator/health
-    - /actuator/prometheus
+# Cors Configuration
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: Authorization,Content-Type,X-Requested-With
+  exposed-headers: Authorization
+  max-age: 3600
+
+# Video Service Configuration
+video:
+  storage:
+    location: ${VIDEO_STORAGE_LOCATION:/data/videos}
+    allowed-types: video/mp4,video/webm,video/x-matroska
+    max-file-size: 2147483648 # 2GB in bytes
+  processing:
+    thread-pool-size: 4
+    queue-capacity: 100
+  analytics:
+    retention-period-days: 90
+    batch-size: 1000
+
+# Session Configuration
+session:
+  analytics:
+    cleanup-interval: 86400 # 24 hours in seconds
+    inactive-timeout: 1800  # 30 minutes in seconds
+
+# Rate Limiting Configuration
+rate-limit:
+  enabled: true
+  default-limit: 100
+  default-duration: 3600 # 1 hour in seconds
+  endpoints:
+    "/api/videos/**":
+      limit: 1000
+      duration: 3600
+    "/api/analytics/**":
+      limit: 500
+      duration: 3600
